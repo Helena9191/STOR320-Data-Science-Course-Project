@@ -1,0 +1,341 @@
+---
+title: "Exploratory Data Analysis"
+author: 'STOR 320.01 Group Group 2'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(corrplot)
+library(readr)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+
+# Import Data Below
+Spotify=read.csv("spotify_dataset.csv")
+```
+
+# Creator: Ashray Kallikadavil
+
+### Q1:  Which musical chord has the highest popularity among the Top 200 charts?
+
+```{r}
+ggplot(data = Spotify) +
+    geom_boxplot(aes(x = Chord, y = Popularity))+
+    labs(title = "Investigating the Relationship Between Musical Chord and Popularity", x = "Musical Chord", y = "Popularity")+
+    coord_flip()
+```
+
+```{r}
+ggplot(data = Spotify) +
+    geom_histogram(aes(x=Chord), stat="count")+
+    labs(title = "Distribution of the Musical Chord of Top Songs", x = "Musical Chord", y = "Count of Musical Chord on the Top 200")
+```
+
+Based on the boxplot, what we see is that the various musical chords have an average popularity around 75 on the scale of 0 to 100. Each of the chords have around the same number of outliers that are far less than the interquartile range. This did not provide me a gauge to really differentiate between the various relationship between chord and popularity.
+
+Therefore, to further investigate the relationship, I created a histogram to visualize the frequency of songs in the Top 200 charts across different keys. A majority of the keys have between 100-150 songs that are in the Top 200, but it is evident that songs that are in the key of C-sharp/D-flat have the highest number of songs that are in the Top 200 charts.
+
+### Q2: How do danceability and energy allow us to predict which songs are more popular than others?
+
+```{r}
+ggplot(data = Spotify) +
+    geom_jitter(aes(x = Danceability, y = Energy, color = Popularity), alpha=0.75) +
+  geom_smooth(aes(x = Danceability, y = Energy), method = lm, color = "black") +
+  scale_color_gradientn(colors = rainbow(7))
+```
+
+To visualize the relationship between danceability and energy, I created a scatter plot and used the color function with a gradient to see if there is a relationship between all three continuous variables. What I notice from the scatterplot is that a large majority of the data is concentrated around a popularity of 75 on the 0 to 100 scale, which corroborates with the previous findings in the box plot. Based on the regression line, we can see that there is a weak positive association between energy and danceability. Based on a lot of the points on the lower part of the plot (at a low y-axis value), a lower energy seems to corresepond with lower popularity. Another point to note is that at higher values of both energy and danceability look to correspond with higher popularity, based on a majority of points in the top right of the scatter plot. Therefore, I would argue that the positive relationship between energy and danceability corresponds to a higher popularity.
+
+# Interpreter: Olivia Katsoudas
+
+### Q1: Which artist has the most number of times charted in the Top 200 charts?
+
+```{r}
+spotify=read_csv("spotify_dataset.csv")
+
+top_artists_1 <- spotify %>%
+  group_by(Artist) %>%
+  select("Artist", "Number of Times Charted") %>%
+  arrange(desc(`Number of Times Charted`))
+head(top_artists_1, 1)
+```
+
+Harry Styles is the artist who has the most songs charted in the Top 200 chart.
+
+### Q2: Which music genre is the least popular in the Top 200 charts?
+
+```{r}
+genre_sort <- spotify %>%
+  group_by(Genre,Streams) %>%
+  select("Genre", "Streams") %>%
+  arrange(Streams)
+head(genre_sort, 10)
+ggplot(data=genre_sort) + 
+  geom_bar(aes(x=(reorder(Genre, Streams)), y=Streams), stat = 'identity', color="pink") + 
+  labs(x = 'Genre')
+```
+
+The least popular genres include mix of different regional branches of pop, such as modern indie pop and Latin pop.
+
+# Orator 1: Qianhui Fang
+
+### Q1: Is it true that the higher the energy, the higher the charting position and number of times charted?
+
+```{r}
+#Generate a data frame with only Energy in descending order and Highest.Charting.Position
+energy_position<-Spotify %>% 
+  select(Index,Energy, Highest.Charting.Position) %>% 
+  arrange(desc(Energy))
+
+#Look at the table
+energy_position[1:20,]
+
+#Look at the Energy distribution
+ggplot(data=energy_position,mapping=aes(x=Energy))+
+  geom_density()
+
+#Look at the relationship between Energy and Highest.Charting.Position via a density map
+ggplot(data=energy_position,mapping=aes(x=Energy, y=Highest.Charting.Position))+
+  geom_density2d_filled()
+
+#Look for songs that have Energy greater than 0.85 and charted the top 10
+energy_position %>% 
+  filter(Energy>=0.85) %>% 
+  nrow()
+
+energy_position %>% 
+  filter(Energy>=0.85 & Highest.Charting.Position<=10)
+```
+
+So, from the above density2D graph, we can see that it is not true that the higher the energy, the higher the charting position. Most of the songs with Energy level around 0.65, charted the highest and got into the top 50. As the Energy level increases, the probability that a song got into the top 50 decreases significantly. For example, when the Energy level is higher than 0.8, the probability decreases to 0.4% to 0 which is almost impossible. Also, we can take a look at the table. For songs that have the Energy level higher than 0.85, only 3 out of 121 songs got into the top 10.
+
+```{r}
+#Generate a data frame with index, and Energy, and Number.of.Times.Charted in descending order
+energy_timescharted<-Spotify %>% 
+  select(Index, Number.of.Times.Charted, Energy) %>% 
+  arrange(desc(Number.of.Times.Charted),desc(Energy)) %>% 
+  group_by(Number.of.Times.Charted)
+
+head(energy_timescharted)
+
+# Find the song with the highest Number.of.Times.Charted
+Spotify[369,]
+
+# Conduct a correlation test to see the relationship between Energy and Number.of.Times.Charted
+cor.test(energy_timescharted$Energy,energy_timescharted$Number.of.Times.Charted)
+```
+
+Apparently, the answer is no. It is not true the the higher the energy, the higher the number of times charted. The song that has the highest Number.of.Times.Charted is "Falling", made by Harry Styles, with a record of 142 times charted. However, the Energy level is only 0.267 which is quite low. To further confirm our answer, I made a correlation test between Energy and Number.of.Times.Charted and found that the correlation is -0.06113928, appearing to be a weak negative relationship. Therefore, we cannot say that the higher the Energy, the higher the Number.of.Times.Charted since the test suggests that the truth might be the opposite.
+
+
+### Q2: What music genre do people listen to the most from 2020 to 2021? From the first glance of the dataset, is it pop music?
+```{r}
+Genre_pop <- Spotify[grep("pop", Spotify$Genre), ]
+Genre_dancepop <- Spotify[grep("dance pop", Spotify$Genre), ]
+Genre_kpop <- Spotify[grep("k-pop",Spotify$Genre), ]
+
+
+nrow(Genre_dancepop)
+nrow(Genre_kpop)
+nrow(Genre_pop)
+
+head(Genre_pop$Genre,10)
+```
+
+Yes, people listen to pop music the most. 819 out of 1556 songs include the elements of pop. The pop music can include pop, k-pop, dance pop, electropop, pop rap etc.
+
+# Orator 2: Bo Rieker
+
+### Q1: Does valence correlate with energy?
+
+```{r}
+valence_energy <- Spotify %>%
+  select(Song.Name, Valence, Energy)
+
+ggplot(data=valence_energy) + geom_point(aes(x=Valence, y=Energy)) + geom_smooth(aes(x=Valence,y=Energy))
+
+Valence_Energy_lm<- lm(Valence ~ Energy, data = valence_energy)
+summary(Valence_Energy_lm)
+```
+
+Yes, higher the valence higher the energy. This is shown by the positive correlation between these two variables.
+
+### Q2: Do artist followers relate to the number of streams for each individual song?
+
+```{r}
+songs_bystreams <- Spotify %>%
+  select(Song.Name, Streams, Artist, Artist.Followers)%>%
+  mutate(name = fct_reorder(Song.Name, Streams))
+
+songs_bystreams$Song.Name <- factor(songs_bystreams$Song.Name, levels = songs_bystreams$Song.Name)
+
+ggplot(songs_bystreams, aes(x=Song.Name, y=Artist.Followers)) +
+    geom_bar(stat='identity', position='dodge', color="blue")+
+  xlab('Songs Ordered Most Streams to Least') +
+  ylab('Number of Artist Followers')
+```
+
+This figure reveals that there is no correlation between number of streams and artist followers. The x-axis is ordered by most popular songs on the left to least popular songs on the right. Because the height of the bars is jumbled and there is no real pattern among them if a artist has more followers, it doesn’t necessarily guarantee that their song will have a high number of streams.
+
+# Deliverer: Emily Pumer
+
+### Q1: Is a song that is charted for a longer period of time more likely to reach a higher peak charting position?
+
+```{r}
+spotify=read_csv("spotify_dataset.csv")
+
+spotifyMod = filter(spotify, `Highest Charting Position` %in% c(1,2,3,4,5,6,7,8,9,10))
+arrange(spotifyMod, `Highest Charting Position`)
+ggplot(data = spotifyMod, aes(`Highest Charting Position`, fill = `Number of Times Charted`)) +
+  geom_histogram(bins = 10, color = "white", fill = "black") +
+  labs(title="Relationship between Number of Times a Song is Charted and its Peak Charting Position", y = "Number of Times Charted")
+```
+
+To represent the relationship between the number of times a song charted and its peak rating I used a histogram. From observing the data, I would conclude there is a weak, positive correlation between the two variables.
+
+### Q2: Is a song with a higher tempo more likely to peak higher on the charts than a song of lower tempo?
+
+```{r}
+spotifyTempo = arrange(spotify, desc(`Highest Charting Position`))
+ggplot(data = spotifyTempo, aes(x = `Highest Charting Position`, y= Tempo))+
+  labs(y = "Tempo (bpm)")+
+  geom_point(color = "paleturquoise4")+
+  geom_smooth( color = "firebrick3")
+  
+```
+
+I used a scatterplot and line of best fit to plot the relationship between a songs tempo and its highest charting position. It appears that there is no correlation between the tempo of a song and how high it peaks on the music charts.
+
+# Follow-up Questions
+
+### New Questions Based Off Initial Investigation
+
+- Q1: Which continuous variable in the dataset has the strongest association with popularity?
+- Q2: Which genre of music is most popular among the Top 10 artists?
+- Q3: We see that pop music is the most popular genre. Which subset (e.g. pop, post-teen pop, dance pop, etc.) is specifically the most popular in the Top 200 Charts?
+- Q4: Which year that a song was released has the most number of songs in the Top 200 charts?
+
+### Investigation of Follow-up Questions
+
+### Q1: Which continuous variable in the dataset has the strongest association with popularity?
+```{r}
+# Pull out the column names
+colnames(Spotify)
+
+# Since 'Streams' in the original data is a character variable, we should convert it into numeric variables
+Spotify <- Spotify %>% mutate(
+    Streams = as.numeric(gsub(",","",Streams))
+)
+```
+
+```{r}
+# Pick all the numeric variables and create a correlation plot to show their relationships with each other
+Spotify_num <- Spotify[c(3,6,8,13:22)]
+numCor <- cor(Spotify_num , use="pairwise.complete.obs")
+corrplot(numCor, method = "ellipse", type = "upper", tl.srt = 45)
+```
+
+```{r}
+# We find that 'Popularity' is positively related with 'Loudness', 'Danceability', 'Energy', and 'Valence'. So, we made a density plot to investigate the distributions of those variables in the entire Spotify data.
+
+EVD_density <- ggplot(Spotify) +
+    geom_density(aes(x=Valence, fill ="Valence"),alpha = 0.5) + 
+    geom_density(aes(x=Danceability, fill ="Danceability"),alpha = 0.5) +
+    geom_density(aes(x=Energy, fill ="Energy"), alpha = 0.5) + 
+    scale_x_continuous(name="Energy, Valence and Danceability") +
+    scale_y_continuous(name="Density") +
+    ggtitle("Density plot of Energy, Valence and Danceability") +
+    theme_light() +
+    theme(plot.title = element_text(size = 14, face = "bold"),
+          text = element_text(size = 12)) +
+    theme(legend.title=element_blank()) +
+    scale_fill_brewer(palette="Set1")
+
+EVD_density
+```
+
+```{r}
+loudness_density <- ggplot(Spotify) +
+    geom_density(aes(Loudness, fill ="Loudness"),alpha=0.7) + 
+    scale_x_continuous(name = "Loudness") +
+    scale_y_continuous(name = "Density") +
+    ggtitle("Density plot of Loudness") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 14, face = "bold"),
+            text = element_text(size = 12)) +
+    theme(legend.title=element_blank())
+  
+loudness_density
+```
+
+### Q2:Which genre of music is most popular among the Top 10 artists?
+```{r}
+# Generate a table with the top artists by ranking their number of appearance on the Top 200
+top_artists <- Spotify %>%
+    group_by(Artist)  %>%
+    summarise(n_apperance = n()) %>%
+    filter(n_apperance > 1) %>%
+    arrange(desc(n_apperance))
+
+top_artists$Artist <- factor(top_artists$Artist, levels = top_artists$Artist[order(top_artists$n_apperance)])
+
+# Select the Top 10 artists
+ggplot(top_artists[1:10,], aes(x = Artist, y = n_apperance)) +
+    geom_bar(stat = "identity",  fill = "red3", width = 0.7,alpha=0.7 ) + 
+    labs(title = "Top Artists of 2020-2021", x = "Artists", y = "Number of Apperance on the Top 200") +
+    theme(plot.title = element_text(size=15,hjust=-.3,face = "bold"), axis.title = element_text(size=12)) +
+    geom_text(aes(label=n_apperance), hjust = 1.5, size = 3, color = 'white') +
+    coord_flip()
+```
+
+```{r}
+#Clean the data by eliminating the NA
+Top_10 <- Spotify %>%
+  select(Artist, Genre) %>% 
+  filter(Artist %in% c("Taylor Swift","Lil Uzi Vert","Justin Bieber","Juice WRLD","Pop Smoke","BTS","Bad Bunny","Eminem","The Weeknd","Ariana Grande")) %>% 
+  filter(!Genre%in% c(" ", "[]"))
+```
+
+```{r}
+#Show the genres
+Top_10.fct = as.factor(Top_10$Genre)
+levels(Top_10.fct)
+```
+
+```{r}
+#Plot the genre
+ggplot(data = Top_10)+
+  geom_bar(aes(x=Genre),fill="lightskyblue1")+
+  labs(title = "Music Genres of the Top 10 Artists", x = "Music Genres", y = "Count") +
+  theme(plot.title = element_text(size=15,hjust=-.3,face = "bold"), axis.title = element_text(size=10)) +
+  coord_flip()
+```
+
+```{r}
+#Generaate a table to see the number of appearance of each genre
+Top_10_1 <-Top_10 %>% 
+  group_by(Genre) %>% 
+  summarise(n_appearance=n(),
+            .groups="drop")
+
+Top_10_1
+```
+
+```{r}
+#We find that the keyword 'pop' appears the most so that we count the number of appearance
+pop <- Top_10.fct[grep("pop", Top_10.fct)]
+length(pop)
+```
+
+# Summary
+We found some interesting relationships in this large dataset. First, we see that Popularity has a mean of approximately 75, even for the songs charted highest and the most number of times. The musical chord that was most popular in the Top 200 Charts was C-sharp/D-flat, as over 200 of the songs in the dataset were in this key. Danceability and Energy share a weak positive correlation, and on average allow us to predict which songs are more popular/less popular- higher Energy and Danceability on average correspond to higher Popularity, and vice versa. This relationship sparked us to create a follow up question to see which variables shared the strongest association with Popularity. Simply put, which variable could we consider to be the strongest predictor of popular music? Although he only appears 5 separate times, Harry Styles is the artist that is charted the most number of times, which is interesting to consider since other artists appear more than 30 times. Pop music is the overwhelming favorite genre, as we expected, but we were intrigued to further investigate the further subsets of pop, as we found that regional branches of pop, including indie pop and Latin pop were the least popular music genres. This led us to developing our third follow up question. It is interesting that there is not a positive relationship between Energy and Charting Position, or Energy and Number of Times Charted, in fact the opposite is true. We were surprised by this as we expected higher energy to correspond to objectively better music. Another relationship we found is a fairly strong positive relationship between valence and energy, telling us that musical positiveness is positively correlated with energy. One more relationship we noticed was a weak positive relationship between peak charting and the number of times a song is charted. This led us to consider investigating the year of release of a song, because we noticed that older songs were sometimes charted more than recent songs, leading to our fourth follow up question. Overall, most of the relationships and objective facts we found were expected, but we were inspired by the continuous variables, top genres, subsets of pop music, and years of release to develop our follow up questions to further investigate.
+
+The first question we wanted to investigate regarded the relationships between the continuous variables in the dataset. From our initial questions, it became evident that the variables in the data share relationships, and it is important to investigate which variable is the strongest predictor of popularity among the songs in the Top 200 Charts. Therefore, we began by creating a correlation plot, and we see that Energy, Valence, Danceability, and Loudness all share weak positive relationships with Popularity. We created one density plot showing the density of Energy, Valence, and Danceability since they have the same scale of 0-1. Out of the 3, Valence definitely has the weakest relationship with Popularity but we expect it to be positive because Valence represents the positiveness conveyed through a song, and therefore more positive songs will have higher Popularity in the Top 200 Charts. Loudness has the strongest positive relationship with Popularity, and from the plot we see that the songs in the Top 200 charts are most concentrated for a loudness of approximately [-10.-2]. This tells us that generally louder songs, which probably mean higher energy songs, are relatively more popular in the Top 200 Charts on Spotify. There are a couple negative correlations that are notable- Energy and Loudness are strongly negatively associated with Acousticness. This tells us that a lot of the songs with higher Energy and Loudness have a generally higher positiveness conveyed through music, and generally have less music that is generated by just musical instruments. In our second follow up question, we were inspired to investigate if pop-music was the most popular genre among top artists since pop and subsets of pop were the most popular genre among the entire dataset. The first histogram depicts the top 10 most popular artists and the number of times that their music was charted in the Top 200 Charts between 2020 and 2021. Then to investigate which genres are most popular among their songs, we created a second histogram that depicts different music genres and their frequencies in the songs of the Top 10 Artists. To illustrate this, we can also visualize it using a table, which is the third figure presented. We find that the keyword "pop" appears 150 times in the songs of the Top 10 Artists, leading us to conclude that pop music is the most popular music genre among the top music artists in the dataset. This is interesting to consider, as the relationship between music genres and the Top 200 Charts is similar on a granular level (with the top 10 musical artists) but also across the entire dataset.
+
+

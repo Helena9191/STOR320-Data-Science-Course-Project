@@ -1,0 +1,479 @@
+---
+title: "Q2"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(car)
+library(plyr)
+library(leaps)
+library(MASS)
+library(class)
+library(ISLR)
+library(caret)
+library(modelr)
+```
+
+```{r}
+Spotify<-read_csv("spotify_dataset.csv")
+```
+
+
+
+
+```{r}
+#POP
+matrix_pop = NULL
+Spotify$pop =0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("pop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$pop=1
+    append = Spotify[i,]
+    if(is.null(matrix_pop)){
+      matrix_pop = append
+    } else{
+      matrix_pop = rbind(matrix_pop, append)
+    }
+  }
+}
+as.tibble(matrix_pop)
+```
+
+```{r}
+#Post-Teen Pop
+matrix_ptpop = NULL
+Spotify$post_teen_pop =0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("post-teen pop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$post_teen_pop =1
+    append = Spotify[i,]
+    if(is.null(matrix_ptpop)){
+      matrix_ptpop = append
+    } else{
+      matrix_ptpop = rbind(matrix_ptpop, append)
+    }
+  }
+}
+as.tibble(matrix_ptpop)
+```
+
+```{r}
+# K-Pop
+matrix_kpop = NULL
+Spotify$k_pop =0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("k-pop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$k_pop =1
+    append = Spotify[i,]
+    if(is.null(matrix_kpop)){
+      matrix_kpop = append
+    } else{
+      matrix_kpop = rbind(matrix_kpop, append)
+    }
+  }
+}
+as.tibble(matrix_kpop)
+```
+
+```{r}
+#Dance_pop
+matrix_dancepop = NULL
+Spotify$dance_pop =0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("dance pop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$dance_pop =1
+    append = Spotify[i,]
+    if(is.null(matrix_dancepop)){
+      matrix_dancepop = append
+    } else{
+      matrix_dancepop = rbind(matrix_dancepop, append)
+    }
+  }
+}
+as.tibble(matrix_dancepop)
+```
+
+```{r}
+# Rap
+matrix_rap = NULL
+Spotify$rap =0
+for(i in c(1:nrow(Spotify))){
+  if(grepl(c("rap"), Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$rap =1
+    append = Spotify[i,]
+    if(is.null(matrix_rap)){
+      matrix_rap = append
+    } else{
+      matrix_rap = rbind(matrix_rap, append)
+    }
+  }
+}
+as.tibble(matrix_rap)
+```
+
+```{r}
+# Pop-rap
+matrix_poprap = NULL
+Spotify$pop_rap =0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("pop rap", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$pop_rap =1
+    append = Spotify[i,]
+    if(is.null(matrix_kpop)){
+      matrix_poprap = append
+    } else{
+      matrix_poprap = rbind(matrix_poprap, append)
+    }
+  }
+}
+as.tibble(matrix_poprap)
+```
+
+```{r}
+#Hiphop
+matrix_hiphop = NULL
+Spotify$hip_hop = 0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("hip hop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$hip_hop =1
+    append = Spotify[i,]
+    if(is.null(matrix_kpop)){
+      matrix_hiphop = append
+    } else{
+      matrix_hiphop = rbind(matrix_hiphop, append)
+    }
+  }
+}
+as.tibble(matrix_hiphop)
+```
+
+```{r}
+# UK-Pop
+matrix_ukpop = NULL
+Spotify$uk_pop = 0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("uk pop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$uk_pop =1
+    append = Spotify[i,]
+    if(is.null(matrix_ukpop)){
+      matrix_ukpop = append
+    } else{
+      matrix_ukpop = rbind(matrix_ukpop, append)
+    }
+  }
+}
+as.tibble(matrix_ukpop)
+```
+
+```{r}
+#Italian-Pop
+matrix_italianpop = NULL
+Spotify$italian_pop = 0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("italian pop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$italian_pop =1
+    append = Spotify[i,]
+    if(is.null(matrix_italianpop)){
+      matrix_italianpop = append
+    } else{
+      matrix_italianpop = rbind(matrix_italianpop, append)
+    }
+  }
+}
+as.tibble(matrix_italianpop)
+```
+
+```{r}
+#Electro_pop
+matrix_electropop = NULL
+Spotify$electro_pop = 0
+for(i in c(1:nrow(Spotify))){
+  if(grepl("electropop", Spotify$Genre[i], fixed=TRUE)){
+    Spotify[i,]$electro_pop =1
+    append = Spotify[i,]
+    if(is.null(matrix_electropop)){
+      matrix_electropop = append
+    } else{
+      matrix_electropop = rbind(matrix_electropop, append)
+    }
+  }
+}
+as.tibble(matrix_electropop)
+```
+
+```{r}
+#Popularity into binary
+Spotify$Popularity_binary = 0
+for(i in c(1:nrow(Spotify))){
+  if(is.na(Spotify$Popularity[i])){
+    Spotify[i,]$Popularity_binary =0
+  }
+  else if(Spotify$Popularity[i]>=75){
+    Spotify[i,]$Popularity_binary =1
+  }else{
+    Spotify[i,]$Popularity_binary =0
+  }
+}
+```
+
+
+
+```{r}
+colnames(Spotify)
+```
+
+
+```{r}
+DATA = Spotify %>% 
+  dplyr::select(c("pop","post_teen_pop","k_pop","dance_pop","rap","pop_rap","hip_hop","uk_pop","italian_pop","electro_pop","Popularity_binary"))
+```
+
+```{r}
+SUM = DATA %>% 
+  summarise(
+    Pop = sum(pop),
+    Rap = sum(rap),
+    Hip_hop = sum(hip_hop),
+    Dance_pop = sum(dance_pop),
+    Post_teen_pop = sum(post_teen_pop),
+    Pop_rap = sum(pop_rap),
+    Electro_pop = sum(electro_pop),
+    UK_pop = sum(uk_pop),
+    K_pop = sum(k_pop),
+    Italian_pop = sum(italian_pop)
+  ) 
+
+SUM
+```
+
+
+```{r}
+Logit.mod = glm(Popularity_binary~., family = binomial, data=DATA)
+summary(Logit.mod)
+```
+
+
+
+
+
+
+
+_KNN_
+```{r}
+#Split data into test and train
+set.seed(123)
+DATA_random= DATA %>%
+        mutate(Set=sample(c("Train","Test"),size = 1556, replace=TRUE,prob = c(0.8,0.2)))
+
+train.DATA<-filter(DATA_random,Set=="Train")
+test.DATA<-filter(DATA_random,Set=="Test")
+train.DATA <- as.data.frame(train.DATA)
+test.DATA <- as.data.frame(test.DATA)
+```
+
+```{r}
+
+knn.pred = knn(train.DATA[,1:10], test.DATA[,1:10] ,train.DATA[,11], k = 15)
+table(knn.pred , test.DATA[,11])
+confusionMatrix(knn.pred,as.factor(test.DATA$Popularity_binary),positive = "1")
+```
+
+```{r}
+k = seq(5,200,10)
+accuracy = rep(NA,20)
+for (i in c(1:20)){
+  knn.pred = knn(train.DATA[,1:10], test.DATA[,1:10] ,train.DATA[,11], k = k[i])
+  accuracy[i] = mean(test.DATA[,11]==knn.pred)
+}
+
+ggplot(data=tibble(k,accuracy)) +
+  geom_line(aes(x=k, y=accuracy),color="lightskyblue2",size=2) +
+  theme_minimal() +
+  xlab("Choice of k") +
+  ylab("Percentage of Accurate Predictions") +
+  theme(text=element_text(size=10))
+```
+
+```{r}
+k[which.max(accuracy)]
+```
+
+
+
+```{r}
+colnames(DATA)
+```
+
+
+
+
+
+_Shrinkage Method_
+
+split the data:
+```{r}
+# get the numb 70/30 training test split
+numberOfTrainingSamples <- round(nrow(DATA) * .8)
+features <- DATA[,1:10]
+label<-DATA[,11]
+
+# training data
+idx = 1:numberOfTrainingSamples
+train_data <- features[idx, ]
+train_labels <- label[idx,]
+
+# testing data
+test_data <- features[-idx,]
+test_labels <- label[-idx,]
+```
+
+
+
+
+
+```{r}
+train_data.2 = data.matrix(train_data)
+train_labels.2 = data.matrix(train_labels)
+
+test_data.2 = data.matrix(test_data)
+test_labels.2 = data.matrix(test_labels)
+```
+
+
+
+Use the Logistic Regression with penalty terms (LASSO and Ridge):
+```{r}
+library(glmnet)
+```
+
+```{r}
+set.seed(216)
+cvmod.0=cv.glmnet(y=as.factor(train_labels.2),x=train_data.2,alpha=0,
+                  family="binomial",type.measure="class")
+set.seed(216)
+cvmod.25=cv.glmnet(y=as.factor(train_labels.2),x=train_data.2,alpha=0.25,
+                   family="binomial",type.measure="class")
+set.seed(216)
+cvmod.5=cv.glmnet(y=as.factor(train_labels.2),x=train_data.2,alpha=0.5,
+                  family="binomial",type.measure="class")
+set.seed(216)
+cvmod.75=cv.glmnet(y=as.factor(train_labels.2),x=train_data.2,alpha=0.75,
+                   family="binomial",type.measure="class")
+set.seed(216)
+cvmod.1=cv.glmnet(y=as.factor(train_labels.2),x=train_data.2,alpha=1,
+                  family="binomial",type.measure="class")
+
+CV.0.ERROR=cvmod.0$cvm[which(cvmod.0$lambda==cvmod.0$lambda.1se)]
+CV.25.ERROR=cvmod.25$cvm[which(cvmod.25$lambda==cvmod.25$lambda.1se)]
+CV.5.ERROR=cvmod.5$cvm[which(cvmod.5$lambda==cvmod.5$lambda.1se)]
+CV.75.ERROR=cvmod.75$cvm[which(cvmod.75$lambda==cvmod.75$lambda.1se)]
+CV.1.ERROR=cvmod.1$cvm[which(cvmod.1$lambda==cvmod.1$lambda.1se)]
+
+MOD.RESULT=tibble(alpha=c(0,0.25,0.5,0.75,1),
+                  lambda=c(cvmod.0$lambda.1se,cvmod.25$lambda.1se,
+                           cvmod.5$lambda.1se,cvmod.75$lambda.1se,
+                           cvmod.1$lambda.1se),
+                  CV.Error=c(CV.0.ERROR,CV.25.ERROR,CV.5.ERROR,
+                             CV.75.ERROR,CV.1.ERROR))
+print(MOD.RESULT)
+```
+
+
+```{r}
+best.alpha=MOD.RESULT$alpha[which.min(MOD.RESULT$CV.Error)]
+best.lambda=MOD.RESULT$lambda[which.min(MOD.RESULT$CV.Error)]
+
+best.mod=glmnet(y=as.factor(train_labels.2),x=train_data.2,
+                nlambda=1,lambda=best.lambda,alpha=best.alpha,
+                family="binomial")
+
+
+Predict=predict(best.mod,newx=test_data.2,type="class")
+
+pred.elas = as.factor(Predict)
+label = as.factor(test_labels$Popularity_binary)
+
+
+confusionMatrix(pred.elas,label,positive = "1")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

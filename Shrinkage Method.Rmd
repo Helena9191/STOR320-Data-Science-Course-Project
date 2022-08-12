@@ -1,0 +1,155 @@
+---
+title: "Shrinkage_no_interaction"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+library(broom)
+library(modelr)
+library(glmnet)
+library(Ecdat)
+library(dplyr)
+library(plyr)
+```
+
+
+```{r}
+Spotify<-read_csv("spotify_dataset.csv")
+```
+
+
+```{r}
+#Turn Duration from ms into minutes
+Spotify <- Spotify %>% 
+  mutate(Duration_min=(`Duration (ms)`%/%1000)/60)
+```
+
+
+
+```{r}
+#Turn Chord into number so that it can be modeled easily 
+Spotify$Key <- revalue(Spotify$Chord, c("C" = "0", "C#/Db" = "1", "D" = "2", "D#/Eb" = "3", "E" = "4", "F" =  "5", "F#/Gb" = "6","G" = "7","G#/Ab" = "8","A" = "9",	
+"A#/Bb" = "10","B" = "11"))
+
+Spotify$Key <- as.factor(Spotify$Key)
+colnames(Spotify)
+```
+
+
+
+
+
+```{r}
+Spotify.ss = Spotify
+```
+
+
+```{r}
+#Standardize Scales
+Spotify.ss$Danceability <- scale(Spotify.ss$Danceability)
+Spotify.ss$Energy <- scale(Spotify.ss$Energy)
+Spotify.ss$Loudness <- scale(Spotify.ss$Loudness)
+Spotify.ss$Speechiness <- scale(Spotify.ss$Speechiness)
+Spotify.ss$Acousticness <- scale(Spotify.ss$Acousticness)
+Spotify.ss$Liveness <- scale(Spotify.ss$Liveness)
+Spotify.ss$Tempo <- scale(Spotify.ss$Tempo)
+Spotify.ss$Valence <- scale(Spotify.ss$Valence)
+Spotify.ss$Duration_min <- scale(Spotify.ss$Duration_min)
+Spotify.ss$`Artist Followers` <- scale(Spotify.ss$`Artist Followers`)
+
+Spotify.ss
+```
+
+
+
+
+
+```{r}
+Spotify.cleaned <-filter(Spotify,Popularity>0 )
+DATA = Spotify.cleaned[,c("Danceability","Energy","Loudness","Speechiness","Acousticness","Liveness","Tempo","Valence","Duration_min","Key","Artist","Popularity")]
+head(DATA)
+options(na.action="na.pass")
+y=DATA$Popularity
+X=model_matrix(DATA,Popularity~Danceability+Energy+Loudness+Speechiness+Acousticness+Liveness+Tempo+Valence+Duration_min+Key+Artist)[,-1]
+var.names=names(X)
+dim(X)
+```
+
+
+
+```{r}
+set.seed(216)
+cvmod.0=cv.glmnet(y=y,x=as.matrix(X),alpha=0)
+set.seed(216)
+cvmod.25=cv.glmnet(y=y,x=as.matrix(X),alpha=0.25)
+set.seed(216)
+cvmod.5=cv.glmnet(y=y,x=as.matrix(X),alpha=0.5)
+set.seed(216)
+cvmod.75=cv.glmnet(y=y,x=as.matrix(X),alpha=0.75)
+set.seed(216)
+cvmod.1=cv.glmnet(y=y,x=as.matrix(X),alpha=1)
+
+CV.0.ERROR=cvmod.0$cvm[which(cvmod.0$lambda==cvmod.0$lambda.1se)]
+CV.25.ERROR=cvmod.25$cvm[which(cvmod.25$lambda==cvmod.25$lambda.1se)]
+CV.5.ERROR=cvmod.5$cvm[which(cvmod.5$lambda==cvmod.5$lambda.1se)]
+CV.75.ERROR=cvmod.75$cvm[which(cvmod.75$lambda==cvmod.75$lambda.1se)]
+CV.1.ERROR=cvmod.1$cvm[which(cvmod.1$lambda==cvmod.1$lambda.1se)]
+
+MOD.RESULT=tibble(alpha=c(0,0.25,0.5,0.75,1),
+                  lambda=c(cvmod.0$lambda.1se,cvmod.25$lambda.1se,
+                           cvmod.5$lambda.1se,cvmod.75$lambda.1se,
+                           cvmod.1$lambda.1se),
+                  CV.Error=c(CV.0.ERROR,CV.25.ERROR,CV.5.ERROR,
+                             CV.75.ERROR,CV.1.ERROR))
+print(MOD.RESULT)
+
+```
+
+
+
+
+
+
+```{r}
+best.alpha=MOD.RESULT$alpha[which.min(MOD.RESULT$CV.Error)]
+best.lambda=MOD.RESULT$lambda[which.min(MOD.RESULT$CV.Error)]
+
+best.mod=glmnet(y=y,x=as.matrix(X),nlambda=1,lambda=best.lambda,alpha=best.alpha)
+best.coef=as.tibble(as.matrix(coef(best.mod)))
+best.coef2=best.coef %>% 
+              mutate(Parameter=c("Int",var.names)) %>%
+              dplyr::rename(Estimate=s0) %>%
+              select(Parameter,Estimate)
+nonzero.best.coef=best.coef2 %>%
+                    filter(Estimate!=0)
+print(nonzero.best.coef,n=1e3)
+```
+
+
+
+```{r}
+DATA$Popularity.hat=predict(best.mod,newx=as.matrix(X))
+
+ggplot(DATA) +
+  geom_point(aes(x=Popularity,y=Popularity.hat),color="lightskyblue2") +
+  geom_abline(a=0,b=1,linetype="dashed") +
+  theme_minimal() +
+  ylab("Predicted Popularity") +
+  xlab("Actual Popularity")
+```
+
+
+
+```{r}
+ggplot(DATA) +
+  geom_histogram(aes(x=Popularity-Popularity.hat),fill="lightskyblue2") +
+  theme_minimal() +
+  xlab("Residuals") +
+  ylab("Frequency")
+
+```
+
+
+
